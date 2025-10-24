@@ -47,7 +47,7 @@ exports.handler = async (event, context) => {
     try {
         // --- Schritt 4: Eingehenden Prompt lesen ---
         const body = JSON.parse(event.body);
-        const userPrompt = body.prompt;
+        const userPrompt = body.prompt; // Hier ist der Text des Benutzers
 
         if (!userPrompt) {
             return {
@@ -60,13 +60,16 @@ exports.handler = async (event, context) => {
         // --- Schritt 5: Together.ai API-Anfrage ---
         const apiUrl = 'https://api.together.xyz/v1/chat/completions';
         
-        // KORREKTUR 1: 'messages' muss ein Array von Objekten sein
         const apiRequestBody = {
             model: 'openai/gpt-oss-20b',
             messages: [
+                // (Optional) Sie können eine System-Anweisung hinzufügen
+                // { role: 'system', content: 'Du bist ein hilfreicher Assistent.' },
+                
+                // KORREKTUR 1: Der 'userPrompt' (Ihre Variable) wird hier verwendet
                 {
                     role: "user",
-                    content: userPrompt // Der 'userPrompt' wird hier verwendet
+                    content: userPrompt 
                 }
             ],
             temperature: 0.7 
@@ -84,9 +87,10 @@ exports.handler = async (event, context) => {
         });
 
         if (!apiResponse.ok) {
-            const errorData = await apiResponse.json();
+            // Versucht, detailliertere Fehler von der API zu erhalten
+            const errorData = await apiResponse.json().catch(() => ({})); 
             console.error('Together.ai API Fehler:', errorData);
-            throw new Error(`Together.ai API Fehler: ${apiResponse.statusText}`);
+            throw new Error(`Together.ai API Fehler: ${apiResponse.statusText}. Details: ${JSON.stringify(errorData)}`);
         }
 
         const data = await apiResponse.json();
@@ -98,7 +102,7 @@ exports.handler = async (event, context) => {
         return {
             statusCode: 200,
             headers: corsHeaders, 
-            body: JSON.stringify({ reply: aiReply })
+            body: JSON.stringify({ reply: aiReply }) // 'reply' ist der Schlüssel, den Ihr Frontend erwartet
         };
 
     } catch (error) {
